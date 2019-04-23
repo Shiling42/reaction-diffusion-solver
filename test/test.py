@@ -3,23 +3,30 @@ import sys
 sys.path.append('/home/shiling/Documents/GitHub/reaction-diffusion-solver')
 
 
-from rdsolver import turing_pattern as tp
+#from rdsolver import turing_pattern as tNp
 #dir(rds)
 from rdsolver.n_state_system import *
 
-# Define the states
-D1 = 8e-4
+
+# Define the states of the particle
+D1 = 8e-2
 D2 = 1.1*D1
+D3 = 2*D1
 state1 = State(D=D1,E=2)
 state2 = State(D=D2,E=3.4)
-states = (state1,state2)
-
+state3 = State(D=D3,E=4.5)
+states = (state1,state2,state3)
 size = 30
 x = np.linspace(0,1,size)
-T1,T2 = 1.6, 1
-T_field = 2*T1*(1-x)*x+T2
-T_field = T1+(T2-T1)*x
-system1=NStateSystem(states,T_field=T_field,space_size=size)
+
+##Set tempreature field
+T_low =1
+T_high = 2
+sigma=0.2
+T_field = T_low+(T_high-T_low)*np.exp(-(x-np.average(x))**2/(2*sigma**2))*np.sqrt(1/(2*sigma**2*np.pi))
+
+# With Diichlet boundary condition
+system1=NStateSystem(states,T_field=T_field,space_size=size,boundary='Dirichlet')
 system1.stationary()
 fig=plt.figure(figsize=(18, 13), dpi= 80, facecolor='w', edgecolor='k')
 plt.subplot(3,1,1)
@@ -30,6 +37,20 @@ plt.subplot(3,1,3)
 system1.soret_compare()
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace= 0.7)
 plt.show()
+
+# With Neumann boundary condition
+system1=NStateSystem(states,T_field=T_field,space_size=size,boundary='Neumann')
+system1.stationary()
+fig=plt.figure(figsize=(18, 13), dpi= 80, facecolor='w', edgecolor='k')
+plt.subplot(3,1,1)
+system1.plot_T_field()
+plt.subplot(3,1,2)
+system1.plot_stat_dis()
+plt.subplot(3,1,3)
+system1.soret_compare()
+plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace= 0.7)
+plt.show()
+
 '''
 # creat a particle
 state1 = State(D=1e-3,E=2)

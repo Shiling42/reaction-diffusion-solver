@@ -15,19 +15,23 @@ class State(Reactant):
 
 
 class NStateSystem(RDSystem):
-    def __init__(self,reactants=(),distribution=[],T_field = [],dt=0.01,space_size=50,*args):
+    def __init__(self,reactants=(),distribution=[],T_field = [],dt=0.01,space_size=50,boundary ='Neumann',*args):
         self.T_field = T_field
         self.dim = dim = np.size(np.shape(T_field))
         RDSystem.__init__(
             self,reactants,
             space_size = np.shape(T_field)[0], 
-            dim=dim,dt=dt)
+            boundary = boundary,dim=dim,dt=dt)
         #   and the spatical distribution   
         if distribution != []:
             self.dis = distribution  
         else:
             self.dis = np.ones(np.hstack((len(reactants),(np.shape(T_field)))))/len(reactants)
-            
+        dis_non_diffu = [np.exp(-rt._energy/self.T_field ) for rt in reactants]
+        dis_non_diffu = [dis_non_diffu[i]/np.sum(dis_non_diffu,axis=0) for i in range(self._num_chem)]
+        self.dis = np.array(dis_non_diffu)
+        self.env = np.array(dis_non_diffu)
+
     def info(self):
         print('This particle have %i states:'%self._num_chem)
         for i in range(self._num_chem):
@@ -162,3 +166,5 @@ class NStateSystem(RDSystem):
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_zlabel('C')
+
+
