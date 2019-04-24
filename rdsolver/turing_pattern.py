@@ -20,15 +20,6 @@ class TuringPattern(RDSystem):
             dudt_reac[0,:,:] +=  u[0]- u[0]**3 - u[1] + self.k
             dudt_reac[1,:,:] +=  (u[0] - u[1])/self.tau
         return dudt_reac
-    
-    def evolution(self,evolution_time):
-        i=0
-        for i in range(int(evolution_time/self.dt)):
-            self.diffusion_reaction();
-            if i%1000 ==0:
-                print('time: ',i*self.dt)
-            #print(np.sum(abs(self.dis-dis_tem))
-        print('running time=',i*self.dt)
 
 
 if __name__ == "__main__":   

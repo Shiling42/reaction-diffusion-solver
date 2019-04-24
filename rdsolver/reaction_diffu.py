@@ -49,11 +49,11 @@ class RDSystem:
         else:
             self.size = space_size
             self.dx = 1/space_size
-            self._num_chem = len(reactants)
-            self._chem_species = reactants
+            self._num_reactants = len(reactants)
+            self.reactants = reactants
             self.dim = dim
-            self.dt = min(1/5/space_size**2/max([reat.diffu_coe for reat in self._chem_species]),dt);
-            print('dt=',self.dt)
+            self.dt = min(1/5/space_size**2/max([reat.diffu_coe for reat in self.reactants]),dt);
+            #print('dt=',self.dt)
             self.boundary = boundary
             #print(self.dt)
             if dim ==1:
@@ -63,14 +63,14 @@ class RDSystem:
                 space = np.linspace(0,1,space_size)
                 self.x,self.y = np.meshgrid(space,space)
                 self.dis = self.generator[init_dis]([self.x,self.y],dim)
-            self.dis = [self.dis /self._num_chem for i in range(self._num_chem)]
+            self.dis = [self.dis /self._num_reactants for i in range(self._num_reactants)]
       
                 
     def diffusion(self):
         u = self.dis
         dudt_diff = np.zeros(np.shape(u))
-        for i in range(self._num_chem):
-            dudt_diff[i] = ndimage.laplace(u[i])/self.dx**2*self._chem_species[i].diffu_coe;
+        for i in range(self._num_reactants):
+            dudt_diff[i] = ndimage.laplace(u[i])/self.dx**2*self.reactants[i].diffu_coe;
         return dudt_diff
 
     def reaction(self):
@@ -96,7 +96,7 @@ class RDSystem:
                     u[0]=u[-1]=(u[0]+u[-1])/2
                     u[:,0]=u[:,-1]= (u[:,0]+u[:,-1])/2
         if self.boundary == 'Dirichlet':
-            for i in range(self._num_chem):
+            for i in range(self._num_reactants):
                 if self.dim == 1:
                     self.dis[i,0]=self.env[i,0]
                     self.dis[i,-1]=self.env[i,-1]
@@ -112,6 +112,25 @@ class RDSystem:
         solver.integrate(t)
         self.dis = solver.y
     '''
+        
+    def evolution(self,evolution_time,print_time = False):
+        i=0
+        for i in range(int(evolution_time/self.dt)):
+            self.diffusion_reaction();
+            if i%10000 ==0:
+                print('dt: ',i*self.dt) if print_time == True else None
+            #print(np.sum(abs(self.dis-dis_tem))
+        print('run time=',i*self.dt) if print_time == True else None
+
+    def plot_dis(self):
+        #fig = plt.figure()
+        n = self._num_reactants
+        for i in range(n):
+            plt.subplot(1,n,i+1)
+            plt.imshow(self.dis[i])
+            plt.axis('off')
+        #plt.show()
+
     def stationary(self,optimize_target=1e-7):
         i=0
         loss_target = optimize_target# /np.size(self.dis);

@@ -22,21 +22,21 @@ class NStateSystem(RDSystem):
             self,reactants,
             space_size = np.shape(T_field)[0], 
             boundary = boundary,dim=dim,dt=dt)
-        #   and the spatical distribution   
+        #  set the inital distiburion
         if distribution != []:
             self.dis = distribution  
         else:
             self.dis = np.ones(np.hstack((len(reactants),(np.shape(T_field)))))/len(reactants)
         dis_non_diffu = [np.exp(-rt._energy/self.T_field ) for rt in reactants]
-        dis_non_diffu = [dis_non_diffu[i]/np.sum(dis_non_diffu,axis=0) for i in range(self._num_chem)]
-        self.dis = np.array(dis_non_diffu)
-        self.env = np.array(dis_non_diffu)
+        dis_non_diffu = [dis_non_diffu[i]/np.sum(dis_non_diffu,axis=0) for i in range(self._num_reactants)]
+        self.dis = np.array(dis_non_diffu)#non-diffuse solution as  initial condition
+        self.env = np.array(dis_non_diffu)#for Dirichlet boundary condition
 
     def info(self):
-        print('This particle have %i states:'%self._num_chem)
-        for i in range(self._num_chem):
+        print('This particle have %i states:'%self._num_reactants)
+        for i in range(self._num_reactants):
             print('*state',i,': ')
-            self._chem_species[i].info()
+            self.reactants[i].info()
 
     def reaction(self):
         T_field = self.T_field;
@@ -47,23 +47,23 @@ class NStateSystem(RDSystem):
             rate_m[np.where(rate_m>1)]=1
             return rate_m
         if self.dim==2: #2D        
-            for i in range(self._num_chem):
-                for j in range(self._num_chem):
-                    Ei = self._chem_species[i]._energy
-                    Ej = self._chem_species[j]._energy
+            for i in range(self._num_reactants):
+                for j in range(self._num_reactants):
+                    Ei = self.reactants[i]._energy
+                    Ej = self.reactants[j]._energy
                     dudt_reac[i,:,:] +=  rate(Ej,Ei,T_field)*u[j,:,:] - rate(Ei,Ej,T_field)*u[i,:,:]
         if self.dim==1:
-            for i in range(self._num_chem):
-                for j in range(self._num_chem):
-                    Ei = self._chem_species[i]._energy
-                    Ej = self._chem_species[j]._energy
+            for i in range(self._num_reactants):
+                for j in range(self._num_reactants):
+                    Ei = self.reactants[i]._energy
+                    Ej = self.reactants[j]._energy
                     dudt_reac[i,:] +=  rate(Ej,Ei,T_field)*u[j,:] - rate(Ei,Ej,T_field)*u[i,:]
         return dudt_reac
 
     def soret_coeff(self):
         ## soret = (<E*D>-<E><D>)/(<D>kT^2)
         T = self.T_field
-        states = self._chem_species
+        states = self.reactants
         b_factor = lambda x: np.exp(-x/T);
         E_ave = 0
         D_ave = 0
@@ -145,7 +145,7 @@ class NStateSystem(RDSystem):
         u = np.sum(self.dis,axis=0)
         if self.dim == 1:
             x = self.x
-            for i in range(self._num_chem):
+            for i in range(self._num_reactants):
                 linetype = (0,tuple([i,2,1,2,i*2,2]))
                 pl.plot(x,self.dis[i,:],linestyle = linetype ,label = 'state'+str(i))
             pl.plot(x,u,label = 'particle')
