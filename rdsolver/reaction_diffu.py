@@ -123,29 +123,31 @@ class RDSystem:
         print('run time=',i*self.dt) if print_time == True else None
 
     def plot_dis(self):
-        #fig = plt.figure()
         n = self._num_reactants
+        fig, axs = plt.subplots(1, n, figsize=(7, 8*n), sharey=True)
         for i in range(n):
-            plt.subplot(1,n,i+1)
-            plt.imshow(self.dis[i])
-            plt.axis('off')
-        #plt.show()
+            axs[i].imshow(self.dis[i])
+            axs[i].set_title('Reactant %i'%i)
+            axs[i].axis('off')
+        #fig.suptitle('Concentration distribution')
+        plt.show()
 
-    def stationary(self,optimize_target=1e-7):
+    def stationary(self,optimize_target=1e-6,print_time = False):
         i=0
         loss_target = optimize_target# /np.size(self.dis);
-        print('target: ',loss_target)
+        print('target: ',loss_target) if print_time == True else None
         while(1):
             dis_tem = np.array(self.dis)
             self.diffusion_reaction();
-            if i%5000==0:
-                print(i,'run, loss:',np.sum(abs(self.dis-dis_tem)))
-                print('target: ',loss_target)
+            if print_time:
+                if i%5000==0 :
+                    print(i,'run, loss:',np.sum(abs(self.dis-dis_tem)))
+                    print('target: ',loss_target)
             i += 1
             #print(np.sum(abs(self.dis-dis_tem)))
             if np.sum(abs(self.dis-dis_tem)) <loss_target:
                 break;
-        print('running time=',i*self.dt)
+        print('running time=',i*self.dt) if print_time == True else None
         #return self.dis
     
 
