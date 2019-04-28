@@ -7,9 +7,6 @@ from rdsolver.turing_pattern import *
 #from .. import rdsolver
 
 
-
-
-
 Turing_1 = TuringPattern(space_size = 30,
         boundary = 'periodic',init_dis='random')
 #fig = plt.figure()

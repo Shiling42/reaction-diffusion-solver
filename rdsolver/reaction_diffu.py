@@ -1,18 +1,15 @@
 import pylab as pl
 import numpy as np
 from numpy import linalg as LA
-
+# impot modules from sicpy
 from scipy import ndimage, misc
 from scipy.linalg import block_diag
 import scipy.constants as sc
 import scipy as sp
 from scipy.integrate import ode
-
-
+# a module for periodically choose line style
 from itertools import cycle
-
-import random
-
+# plot mopdules
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
