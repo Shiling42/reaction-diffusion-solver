@@ -18,7 +18,7 @@ Turing_1.plot_dis()
 plt.show()
 for i in range(3):
     delta_t = 5
-    Turing_1.evolution(delta_t)
+    Turing_1.evolve(delta_t)
     #Turing_1.stationary(optimize_target=0.05)
     print('t=',delta_t*(i+1))
     #fig = plt.figure()
@@ -35,7 +35,7 @@ print('t=',0)
 Turing_1.plot_dis()
 for i in range(3):
     delta_t = 5
-    Turing_1.evolution(delta_t)
+    Turing_1.evolve(delta_t)
     #Turing_1.stationary(optimize_target=0.05)
     print('t=',delta_t*(i+1)
     fig = plt.figure()

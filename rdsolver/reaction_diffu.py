@@ -113,9 +113,9 @@ class RDSystem:
         self.dis = solver.y
     '''
         
-    def evolution(self,evolution_time,print_time = False):
+    def evolve(self,evolve_time,print_time = False):
         i=0
-        for i in range(int(evolution_time/self.dt)):
+        for i in range(int(evolve_time/self.dt)):
             self.diffusion_reaction();
             if i%10000 ==0:
                 print('dt: ',i*self.dt) if print_time == True else None
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     Turing_1 = TuringPattern(
         a=2.8e-4,b=5e-3,tau=.1,k=-.005,
         space_size=50,dt=0.0005)
-    Turing_1.evolution()
+    Turing_1.evolve()
     dist =Turing_1.dis[0]
     plt.imshow(Turing_1.dis[0])
     plt.show()
