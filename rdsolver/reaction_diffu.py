@@ -67,7 +67,7 @@ class RDSystem:
         u = self.dis
         dudt_diff = np.zeros(np.shape(u))
         for i in range(self._num_reactants):
-            dudt_diff[i] = ndimage.laplace(u[i])/self.dx**2*self.reactants[i].diffu_coe;
+            dudt_diff[i] = ndimage.laplace(u[i]*self.reactants[i].diffu_coe)/self.dx**2;
         return dudt_diff
 
     def reaction(self):
