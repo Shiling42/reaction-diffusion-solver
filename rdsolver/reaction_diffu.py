@@ -13,8 +13,7 @@ from itertools import cycle
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
-
-from .plot_style import *
+from plot_style import *
 
 
 
@@ -61,55 +60,29 @@ class RDSystem:
                 self.x,self.y = np.meshgrid(space,space)
                 self.dis = self.generator[init_dis]([self.x,self.y],dim)
             self.dis = [self.dis /self._num_reactants for i in range(self._num_reactants)]
-      
-                
+
+               
     def diffusion(self):
         u = self.dis
-        dudt_diff = np.zeros(np.shape(u))
-        for i in range(self._num_reactants):
-            dudt_diff[i] = ndimage.laplace(u[i]*self.reactants[i].diffu_coe)/self.dx**2;
+        #dudt_diff = np.zeros(np.shape(u))
+        if self.boundary == 'Dirichlet':
+            dudt_diff = [ndimage.laplace(u[i]*self.reactants[i].diffu_coe,mode='constant')/self.dx**2 for i in range(self._num_reactants)]
+        if self.boundary == 'Neumann':
+            dudt_diff = [ndimage.laplace(u[i]*self.reactants[i].diffu_coe,mode='nearest')/self.dx**2 for i in range(self._num_reactants)]
+        if self.boundary == 'periodic':
+            dudt_diff = [ndimage.laplace(u[i]*self.reactants[i].diffu_coe,mode='wrap')/self.dx**2 for i in range(self._num_reactants)]
         return dudt_diff
 
     def reaction(self):
         return np.zeros(np.shape(self.dis))
+
+    def noise(self):
+        return np.zeros(np.shape(self.dis))
     
-    def diffusion_reaction(self,boundary = 'Neumann'):
-        self.dis += (self.diffusion()+self.reaction())*self.dt;
-        if self.boundary == 'Neumann':
-            for u in self.dis:
-                if self.dim == 1:
-                    u[0]=u[1]
-                    u[-1]=u[-2]
-                if self.dim ==2:
-                    u[0]=u[1]
-                    u[-1]=u[-2]
-                    u[:,0]=u[:,1]
-                    u[:,-1]=u[:,-2]
-        if self.boundary == 'periodic':
-            for u in self.dis:
-                if self.dim == 1:
-                    u[0]=u[-1]=(u[0]+u[-1])/2
-                if self.dim ==2:
-                    u[0]=u[-1]=(u[0]+u[-1])/2
-                    u[:,0]=u[:,-1]= (u[:,0]+u[:,-1])/2
-        if self.boundary == 'Dirichlet':
-            for i in range(self._num_reactants):
-                if self.dim == 1:
-                    self.dis[i,0]=self.env[i,0]
-                    self.dis[i,-1]=self.env[i,-1]
-                if self.dim ==2:
-                    self.dis[i,0]=self.env[i,0]
-                    self.dis[i,-1]=self.env[i,-1]
-                    self.dis[i,:,0]=self.env[i,:,0]
-                    self.dis[i,:,1] =self.env[i,:,-1]
-    '''
-    def integrate(self,t=10):
-        solver = ode(self.diffusion()+self.reaction()).set_integrator('vode', method='bdf', atol=1e-8, rtol=1e-8, nsteps=5000 )
-        solver.set_initial_value(self.dis, 0)
-        solver.integrate(t)
-        self.dis = solver.y
-    '''
-        
+    def diffusion_reaction(self):
+        self.dis += (self.diffusion()+self.reaction()+self.noise()/np.sqrt(self.dt))*self.dt;
+
+      
     def evolve(self,evolve_time,print_time = False):
         i=0
         for i in range(int(evolve_time/self.dt)):
@@ -146,40 +119,5 @@ class RDSystem:
                 break;
         print('running time=',i*self.dt) if print_time == True else None
         #return self.dis
-    
 
-'''
-if __name__ == "__main__":   
-    
-    Turing_1 = TuringPattern(
-        a=2.8e-4,b=5e-3,tau=.1,k=-.005,
-        space_size=50,dt=0.0005)
-    Turing_1.evolve()
-    dist =Turing_1.dis[0]
-    plt.imshow(Turing_1.dis[0])
-    plt.show()
-'''
 
-if __name__ == "__main__":   
-    state1 = State(D=1,E=2)
-    state2 = State(D=1.3,E=3.4)
-    states = (state1,state2)
-    #assign Temperature field
-    size = 30
-    x = np.linspace(-0.5,0.5, size)
-    y = np.linspace(-0.5,0.5, size)
-    xv, yv = np.meshgrid(x, y)
-    T1=1.6
-    sigma = 0.1
-    T_field = np.exp(-(xv**2+yv**2)/sigma)*np.sqrt(1/np.pi/sigma)*T1
-    #create an instance of class
-    system2=NStateSystem(states,T_field=T_field)
-    ## plot the tempreature field
-    #system2.plot_T_field()
-    system2.stationary()
-    system2.soret_compare()
-    plt.show()
-    system2.plot_T_field()
-    plt.show()
-    system2.plot_stat_dis()
-    plt.show()
