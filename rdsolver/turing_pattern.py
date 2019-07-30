@@ -23,6 +23,8 @@ class TuringPattern(RDSystem):
 
 if __name__ == "__main__":   
     Turing_1 = TuringPattern()
-    Turing_1.stationary()
+    #Turing_1.stationary()
+    t=np.linspace(0,10,1000)
+    Turing_1.integrate(t)
     plt.imshow(Turing_1.dis[0])
     plt.show()

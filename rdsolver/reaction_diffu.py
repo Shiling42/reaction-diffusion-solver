@@ -6,7 +6,7 @@ from scipy import ndimage, misc
 from scipy.linalg import block_diag
 import scipy.constants as sc
 import scipy as sp
-from scipy.integrate import ode
+from scipy.integrate import odeint
 # a module for periodically choose line style
 from itertools import cycle
 # plot mopdules
@@ -59,7 +59,7 @@ class RDSystem:
                 space = np.linspace(0,1,space_size)
                 self.x,self.y = np.meshgrid(space,space)
                 self.dis = self.generator[init_dis]([self.x,self.y],dim)
-            self.dis = [self.dis /self._num_reactants for i in range(self._num_reactants)]
+            self.dis = np.array([self.dis /self._num_reactants for i in range(self._num_reactants)])
 
                
     def diffusion(self):
@@ -79,6 +79,21 @@ class RDSystem:
     def noise(self):
         return np.zeros(np.shape(self.dis))
     
+    def dcdt(self,y=None,t=None):
+        dis_shape = np.shape(self.dis)
+        self.dis = np.reshape(y,dis_shape)
+        #print(self.dis)
+        dcdt = self.diffusion()+self.reaction()
+        return dcdt.flatten()
+    
+    def integrate(self,t):
+        dis_shape = np.shape(self.dis)
+        y= self.dis.flatten()
+        dis_t = odeint(self.dcdt,y,t)
+        self.dis = np.reshape(dis_t[-1],dis_shape)
+        return dis_t
+        
+
     def diffusion_reaction(self):
         self.dis += (self.diffusion()+self.reaction()+self.noise()/np.sqrt(self.dt))*self.dt;
 
