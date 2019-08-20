@@ -1,4 +1,4 @@
-from reaction_diffu import *
+from .reaction_diffu import *
 
 class TuringPattern(RDSystem):
     def __init__( self,a = 2.8e-4,b=5e-3,tau=0.1, k=-.005,space_size = 30,dim = 2,\
