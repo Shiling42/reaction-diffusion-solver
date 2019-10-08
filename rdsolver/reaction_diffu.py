@@ -13,7 +13,7 @@ from itertools import cycle
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from plot_style import *
+from .plot_style import *
 
 class Reactant:
     def __init__(self,diff_coe = 0):
@@ -98,12 +98,22 @@ class RDSystem:
         self.dis += (self.diffusion()+self.reaction()+self.noise()/np.sqrt(self.dt))*self.dt;
 
       
-    def evolve(self,evolve_time,print_time = False):
+    def evolve(self,evolve_time,print_time = False,draw=False):
         i=0
+        n_r = self._num_reactants
+        if draw == True:
+            fig, axs = plt.subplots(1, n_r, figsize=(7, 8*n_r), sharey=True)
         for i in range(int(evolve_time/self.dt)):
             self.diffusion_reaction();
-            if i%10000 ==0:
+            if i%500 ==0:
                 print('dt: ',i*self.dt) if print_time == True else None
+                if draw == True:
+                    for i in range(n_r):
+                        axs[i].imshow(self.dis[i])
+                        axs[i].set_title('Reactant %i'%i)
+                        axs[i].axis('off')
+                    plt.draw()
+                    plt.pause(0.00000001)
             #print(np.sum(abs(self.dis-dis_tem))
         print('run time=',i*self.dt) if print_time == True else None
 
@@ -115,7 +125,7 @@ class RDSystem:
             axs[i].set_title('Reactant %i'%i)
             axs[i].axis('off')
         #fig.suptitle('Concentration distribution')
-        plt.show()
+        plt.plot()
 
     def stationary(self,optimize_target=1e-6,print_time = False):
         i=0
