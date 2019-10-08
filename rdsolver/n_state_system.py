@@ -1,4 +1,3 @@
-
 from .reaction_diffu import *
 '''
 A derived class for N-state system

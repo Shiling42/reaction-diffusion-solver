@@ -6,22 +6,18 @@ from scipy import ndimage, misc
 from scipy.linalg import block_diag
 import scipy.constants as sc
 import scipy as sp
-from scipy.integrate import ode
+from scipy.integrate import odeint
 # a module for periodically choose line style
 from itertools import cycle
 # plot mopdules
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
-
 from .plot_style import *
-
-
 
 class Reactant:
     def __init__(self,diff_coe = 0):
         self.diffu_coe= diff_coe
-
 
 class RDSystem:
     generator = {
@@ -38,21 +34,21 @@ class RDSystem:
                     np.shape([sum(v for v in x) if dim==2 else x][0])))
         }
 
-    def __init__(self,reactants=(),space_size = 50,dim = 1,dt=0.01,init_dis= 'random',boundary = 'Neumann',*args):
+    def __init__(self,reactants=(),space_size = 50,dim = 1,dt=0.01,init_dis= 'random',boundary = 'Neumann',potential=None,*args):
         #chem-dic is a dictionary to store the...
         #   and the spatical distribution
         if len(reactants) == 0:
             print('No chemical species added')
         else:
-            self.size = space_size
-            self.dx = 1/space_size
-            self._num_reactants = len(reactants)
-            self.reactants = reactants
-            self.dim = dim
-            self.dt = min(1/5/space_size**2/max([reat.diffu_coe for reat in self.reactants]),dt);
+            self.size = space_size #the size of the system (length of the square space)
+            self.dx = 1/space_size #
+            self._num_reactants = len(reactants) #number of reactants
+            self.reactants = reactants #assign the reactants 
+            self.dim = dim #the dimension of the system (now 1 or 2)
+            self.dt = min(1/5/space_size**2/max([reat.diffu_coe for reat in self.reactants]),dt); #the time step size of the simulation
             #print('dt=',self.dt)
-            self.boundary = boundary
-            #print(self.dt)
+            self.boundary = boundary #boundary condition(Newman,periodic or Dirichlet)
+            #initilize the distribution
             if dim ==1:
                 self.x = np.linspace(0,1,space_size)
                 self.dis = self.generator[init_dis](self.x,dim)
@@ -60,62 +56,64 @@ class RDSystem:
                 space = np.linspace(0,1,space_size)
                 self.x,self.y = np.meshgrid(space,space)
                 self.dis = self.generator[init_dis]([self.x,self.y],dim)
-            self.dis = [self.dis /self._num_reactants for i in range(self._num_reactants)]
-      
-                
+            self.dis = np.array([self.dis /self._num_reactants for i in range(self._num_reactants)])
+
+               
     def diffusion(self):
         u = self.dis
-        dudt_diff = np.zeros(np.shape(u))
-        for i in range(self._num_reactants):
-            dudt_diff[i] = ndimage.laplace(u[i]*self.reactants[i].diffu_coe)/self.dx**2;
+        #dudt_diff = np.zeros(np.shape(u))
+        if self.boundary == 'Dirichlet':
+            dudt_diff = [ndimage.laplace(u[i]*self.reactants[i].diffu_coe,mode='constant')/self.dx**2 for i in range(self._num_reactants)]
+        if self.boundary == 'Neumann':
+            dudt_diff = [ndimage.laplace(u[i]*self.reactants[i].diffu_coe,mode='nearest')/self.dx**2 for i in range(self._num_reactants)]
+        if self.boundary == 'periodic':
+            dudt_diff = [ndimage.laplace(u[i]*self.reactants[i].diffu_coe,mode='wrap')/self.dx**2 for i in range(self._num_reactants)]
         return dudt_diff
 
     def reaction(self):
         return np.zeros(np.shape(self.dis))
+
+    def drag(self):
+        return np.zeros(np.shape(self.dis))
+
+    def noise(self):
+        return np.zeros(np.shape(self.dis))
     
-    def diffusion_reaction(self,boundary = 'Neumann'):
-        self.dis += (self.diffusion()+self.reaction())*self.dt;
-        if self.boundary == 'Neumann':
-            for u in self.dis:
-                if self.dim == 1:
-                    u[0]=u[1]
-                    u[-1]=u[-2]
-                if self.dim ==2:
-                    u[0]=u[1]
-                    u[-1]=u[-2]
-                    u[:,0]=u[:,1]
-                    u[:,-1]=u[:,-2]
-        if self.boundary == 'periodic':
-            for u in self.dis:
-                if self.dim == 1:
-                    u[0]=u[-1]=(u[0]+u[-1])/2
-                if self.dim ==2:
-                    u[0]=u[-1]=(u[0]+u[-1])/2
-                    u[:,0]=u[:,-1]= (u[:,0]+u[:,-1])/2
-        if self.boundary == 'Dirichlet':
-            for i in range(self._num_reactants):
-                if self.dim == 1:
-                    self.dis[i,0]=self.env[i,0]
-                    self.dis[i,-1]=self.env[i,-1]
-                if self.dim ==2:
-                    self.dis[i,0]=self.env[i,0]
-                    self.dis[i,-1]=self.env[i,-1]
-                    self.dis[i,:,0]=self.env[i,:,0]
-                    self.dis[i,:,1] =self.env[i,:,-1]
-    '''
-    def integrate(self,t=10):
-        solver = ode(self.diffusion()+self.reaction()).set_integrator('vode', method='bdf', atol=1e-8, rtol=1e-8, nsteps=5000 )
-        solver.set_initial_value(self.dis, 0)
-        solver.integrate(t)
-        self.dis = solver.y
-    '''
+    def dcdt(self,y=None,t=None):
+        dis_shape = np.shape(self.dis)
+        self.dis = np.reshape(y,dis_shape)
+        #print(self.dis)
+        dcdt = self.diffusion()+self.reaction()
+        return dcdt.flatten()
+    
+    def integrate(self,t):
+        dis_shape = np.shape(self.dis)
+        y= self.dis.flatten()
+        dis_t = odeint(self.dcdt,y,t)
+        self.dis = np.reshape(dis_t[-1],dis_shape)
+        return dis_t
         
-    def evolve(self,evolve_time,print_time = False):
+
+    def diffusion_reaction(self):
+        self.dis += (self.diffusion()+self.reaction()+self.noise()/np.sqrt(self.dt))*self.dt;
+
+      
+    def evolve(self,evolve_time,print_time = False,draw=False):
         i=0
+        n_r = self._num_reactants
+        if draw == True:
+            fig, axs = plt.subplots(1, n_r, figsize=(7, 8*n_r), sharey=True)
         for i in range(int(evolve_time/self.dt)):
             self.diffusion_reaction();
-            if i%10000 ==0:
+            if i%500 ==0:
                 print('dt: ',i*self.dt) if print_time == True else None
+                if draw == True:
+                    for i in range(n_r):
+                        axs[i].imshow(self.dis[i])
+                        axs[i].set_title('Reactant %i'%i)
+                        axs[i].axis('off')
+                    plt.draw()
+                    plt.pause(0.00000001)
             #print(np.sum(abs(self.dis-dis_tem))
         print('run time=',i*self.dt) if print_time == True else None
 
@@ -127,7 +125,7 @@ class RDSystem:
             axs[i].set_title('Reactant %i'%i)
             axs[i].axis('off')
         #fig.suptitle('Concentration distribution')
-        plt.show()
+        plt.plot()
 
     def stationary(self,optimize_target=1e-6,print_time = False):
         i=0
@@ -146,40 +144,5 @@ class RDSystem:
                 break;
         print('running time=',i*self.dt) if print_time == True else None
         #return self.dis
-    
 
-'''
-if __name__ == "__main__":   
-    
-    Turing_1 = TuringPattern(
-        a=2.8e-4,b=5e-3,tau=.1,k=-.005,
-        space_size=50,dt=0.0005)
-    Turing_1.evolve()
-    dist =Turing_1.dis[0]
-    plt.imshow(Turing_1.dis[0])
-    plt.show()
-'''
 
-if __name__ == "__main__":   
-    state1 = State(D=1,E=2)
-    state2 = State(D=1.3,E=3.4)
-    states = (state1,state2)
-    #assign Temperature field
-    size = 30
-    x = np.linspace(-0.5,0.5, size)
-    y = np.linspace(-0.5,0.5, size)
-    xv, yv = np.meshgrid(x, y)
-    T1=1.6
-    sigma = 0.1
-    T_field = np.exp(-(xv**2+yv**2)/sigma)*np.sqrt(1/np.pi/sigma)*T1
-    #create an instance of class
-    system2=NStateSystem(states,T_field=T_field)
-    ## plot the tempreature field
-    #system2.plot_T_field()
-    system2.stationary()
-    system2.soret_compare()
-    plt.show()
-    system2.plot_T_field()
-    plt.show()
-    system2.plot_stat_dis()
-    plt.show()
