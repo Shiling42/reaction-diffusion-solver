@@ -15,12 +15,9 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from plot_style import *
 
-
-
 class Reactant:
     def __init__(self,diff_coe = 0):
         self.diffu_coe= diff_coe
-
 
 class RDSystem:
     generator = {
@@ -37,21 +34,21 @@ class RDSystem:
                     np.shape([sum(v for v in x) if dim==2 else x][0])))
         }
 
-    def __init__(self,reactants=(),space_size = 50,dim = 1,dt=0.01,init_dis= 'random',boundary = 'Neumann',*args):
+    def __init__(self,reactants=(),space_size = 50,dim = 1,dt=0.01,init_dis= 'random',boundary = 'Neumann',potential=None,*args):
         #chem-dic is a dictionary to store the...
         #   and the spatical distribution
         if len(reactants) == 0:
             print('No chemical species added')
         else:
-            self.size = space_size
-            self.dx = 1/space_size
-            self._num_reactants = len(reactants)
-            self.reactants = reactants
-            self.dim = dim
-            self.dt = min(1/5/space_size**2/max([reat.diffu_coe for reat in self.reactants]),dt);
+            self.size = space_size #the size of the system (length of the square space)
+            self.dx = 1/space_size #
+            self._num_reactants = len(reactants) #number of reactants
+            self.reactants = reactants #assign the reactants 
+            self.dim = dim #the dimension of the system (now 1 or 2)
+            self.dt = min(1/5/space_size**2/max([reat.diffu_coe for reat in self.reactants]),dt); #the time step size of the simulation
             #print('dt=',self.dt)
-            self.boundary = boundary
-            #print(self.dt)
+            self.boundary = boundary #boundary condition(Newman,periodic or Dirichlet)
+            #initilize the distribution
             if dim ==1:
                 self.x = np.linspace(0,1,space_size)
                 self.dis = self.generator[init_dis](self.x,dim)
@@ -74,6 +71,9 @@ class RDSystem:
         return dudt_diff
 
     def reaction(self):
+        return np.zeros(np.shape(self.dis))
+
+    def drag(self):
         return np.zeros(np.shape(self.dis))
 
     def noise(self):
