@@ -1,6 +1,6 @@
 from .reaction_diffu import *
 
-class TwoComponent(RDSsystem):
+class TwoComponent(RDSystem):
     def __init__( self,F,G,D1=0,D2=0,space_size = 50,dim = 2,\
         dt=0.01,boundary = 'Neumann',init_dis= 'random',*args):
         RDSystem.__init__(
