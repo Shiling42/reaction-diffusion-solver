@@ -21,16 +21,17 @@ class NStateSystem(RDSystem):
             self,reactants,
             space_size = np.shape(T_field)[0], 
             boundary = boundary,dim=dim,dt=dt)
-        #  set the inital distiburion
+        #  setup the initial distribution
         if distribution != []:
             self.dis = distribution  
         else:
             self.dis = np.ones(np.hstack((len(reactants),(np.shape(T_field)))))/len(reactants)
         dis_non_diffu = [np.exp(-rt._energy/self.T_field ) for rt in reactants]
-        dis_non_diffu = [dis_non_diffu[i]/np.sum(dis_non_diffu,axis=0) for i in range(self._num_reactants)]
+        dis_non_diffu = [dis_non_diffu[i]/np.sum(dis_non_diffu,axis=0) for i in range(self._num_reactants)] #Normalize the distribution
         self.dis = np.array(dis_non_diffu)#non-diffuse solution as  initial condition
-        self.env = np.array(dis_non_diffu)#for Dirichlet boundary condition
-
+        #self.env = np.array(dis_non_diffu)#for Dirichlet boundary condition
+        self.barrier = 1# add a kinetic barrier
+        
     def info(self):
         print('This particle have %i states:'%self._num_reactants)
         for i in range(self._num_reactants):
@@ -44,7 +45,13 @@ class NStateSystem(RDSystem):
         def rate(E_i,E_f,T_field):
             rate_m = np.exp(-(E_f-E_i)/T_field)
             rate_m[np.where(rate_m>1)]=1
-            return rate_m
+            return rate_m*np.exp(-self.barrier/T_field)
+        for i in range(self._num_reactants):
+            for j in range(self._num_reactants):
+                Ei = self.reactants[i]._energy
+                Ej = self.reactants[j]._energy
+                dudt_reac[i] +=  rate(Ej,Ei,T_field)*u[j] - rate(Ei,Ej,T_field)*u[i]
+        """        
         if self.dim==2: #2D        
             for i in range(self._num_reactants):
                 for j in range(self._num_reactants):
@@ -57,6 +64,7 @@ class NStateSystem(RDSystem):
                     Ei = self.reactants[i]._energy
                     Ej = self.reactants[j]._energy
                     dudt_reac[i,:] +=  rate(Ej,Ei,T_field)*u[j,:] - rate(Ei,Ej,T_field)*u[i,:]
+                    """
         return dudt_reac
 
     def soret_coeff(self):

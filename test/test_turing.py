@@ -2,6 +2,10 @@
 #import sys
 #import unittest
 #sys.path.append('/home/shiling/Documents/GitHub/reaction-diffusion-solver')
+
+import sys
+sys.path.append('..')
+
 from rdsolver.turing_pattern import *
 #from .. import rdsolver
 
